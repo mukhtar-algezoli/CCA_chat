@@ -1,0 +1,12 @@
+geopandas
+matplotlib
+PyGithub
+tqdm
+joblib
+transformers
+datasets
+huggingface_hub
+plotly
+torch
+langchain
+clarifai
