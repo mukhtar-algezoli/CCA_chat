@@ -14,15 +14,27 @@ import requests
 
 
 
-def query(payload): 
- API_URL = "https://oa6kdk8gxzmfy79k.us-east-1.aws.endpoints.huggingface.cloud"
+def query(payload, model = "Security"): 
+  if model == "Security":
+    API_URL = "https://oa6kdk8gxzmfy79k.us-east-1.aws.endpoints.huggingface.cloud"
 
- headers = {
-            "Accept" : "application/json", "Content-Type": "application/json" 
-            }
- 
- response = requests.post(API_URL, headers=headers, json=payload)
- return response.json()
+    headers = {
+                "Accept" : "application/json", "Content-Type": "application/json" 
+                }
+    
+    response = requests.post(API_URL, headers=headers, json=payload)
+
+    return response.json()
+  else:
+      API_URL = "https://s6izgwncr4ncciig.us-east-1.aws.endpoints.huggingface.cloud"
+      headers = {
+      "Accept" : "application/json", "Authorization": "Bearer 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",
+      "Content-Type": "application/json" }
+
+      response = requests.post(API_URL, headers=headers, json=payload)
+
+      return response.json()
+
 
 # st.set_page_config(layout="wide")
 
@@ -61,7 +73,12 @@ def show_previous_chats():
       else:
         msg = AIMessage(content=message["content"])
       chat_list.append(msg)
-      st.write(message["content"])
+      if message["role"] == "user":
+         st.write(message["content"])
+      elif message["role"] == "assistant" and "function Greeting(props)" in message["content"]:
+         st.code(message["content"])
+      else:
+         st.write(message["content"])
 
   # conversation.memory.chat_memory = ChatMessageHistory(messages=chat_list)
       
@@ -70,18 +87,19 @@ def show_previous_chats():
 
 
 def chatbot():
-  if message := st.chat_input(key="input"):
+  input_message = """function Greeting(props) {"""
+  if message := st.chat_input(placeholder=input_message, key="input"):
     st.chat_message("user").write(message)
     st.session_state['chat_history'].append({"role": "user", "content": message})
     with st.chat_message("assistant"):
       with st.spinner("Thinking..."):
         # print(message)
-        output = query({ "inputs": message, "parameters": {}})
+        output = query({ "inputs": message, "parameters": {}}, "Security")
         try:
             response = output[0]["generated_text"]
             st.code(response, line_numbers=True)
         except:
-            response = "Server is starting...please try again in one minute"
+            response = "Server is starting...please try again in five minute"
             st.text(response)
 
         # print(output)
@@ -97,9 +115,9 @@ def chatbot():
 
 
 def chat():
-    prompt_list = ["Security code assistant"]
+    prompt_list = ["React"]
     models_map, select_map = get_default_models()
-    default_llm = "codegen2"
+    default_llm = "codegen react finetuned"
     llms_map = {'Select an LLM':None}
     llms_map.update(select_map)
 
@@ -144,8 +162,26 @@ def chat():
     if "chosen_llm" in st.session_state.keys() and "chat_history" not in st.session_state.keys():
         with st.spinner("Chatbot is initializing..."):
             # initial_message = conversation.predict(input='', chat_history=[])
+            init_user_input = """import React from 'react';
+
+function Greeting(props) {"""
+            init_assistant_response = """import React from'react';
+
+function Greeting(props) {
+  return (
+    <div>
+      <h1>Hello {props.name}</h1>
+    </div>
+  );
+}
+
+export default Greeting;
+#"""
             initial_message = "Write the first few lines of a function and I will try to finish it for you!"
-            st.session_state['chat_history'] = [{"role": "assistant", "content": initial_message}]
+            welcome_message = """Hello My name is Cody, Start your code and I will finish it, 
+            below is an example of how I work"""
+            st.session_state['chat_history'] = [{"role": "assistant", "content": welcome_message}, {"role": "user", "content": init_user_input}, {"role":"assistant", "content":init_assistant_response}, {"role": "assistant", "content": initial_message}]
+            # st.session_state['chat_history'] = [{"role": "user", "content": "hello"}]
 
     if "chosen_llm" in st.session_state.keys():
         show_previous_chats()
