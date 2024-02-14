@@ -94,7 +94,7 @@ def chatbot():
     with st.chat_message("assistant"):
       with st.spinner("Thinking..."):
         # print(message)
-        output = query({ "inputs": message, "parameters": {}}, "Security")
+        output = query({ "inputs": message, "config": {"max_length":1024}}, "Security")
         try:
             response = output[0]["generated_text"]
             st.code(response, line_numbers=True)
